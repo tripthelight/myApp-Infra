@@ -5,8 +5,6 @@ set -Eeuo pipefail
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MYAPP_HOME="${MYAPP_HOME:-$HOME/myapp}"
 NETWORK_NAME="myapp-network"
-UPSTREAM_FILE="$PROJECT_DIR/nginx/conf.d/board-upstream.conf"
-UPSTREAM_TEMPLATE="$PROJECT_DIR/nginx/templates/board-upstream.conf"
 
 require_command() {
     if ! command -v "$1" >/dev/null 2>&1; then
@@ -30,14 +28,24 @@ fi
 mkdir -p \
     "$PROJECT_DIR/nginx/conf.d" \
     "$MYAPP_HOME/infra/nginx/conf.d" \
-    "$MYAPP_HOME/board"
+    "$MYAPP_HOME/board" \
+    "$MYAPP_HOME/member"
 
-if [ -f "$UPSTREAM_FILE" ]; then
-    echo "Board upstream state already exists. Keeping the current state."
-else
-    cp "$UPSTREAM_TEMPLATE" "$UPSTREAM_FILE"
-    echo "Board upstream state initialized with Blue."
-fi
+initialize_upstream() {
+    service_name="$1"
+    upstream_file="$PROJECT_DIR/nginx/conf.d/$service_name-upstream.conf"
+    upstream_template="$PROJECT_DIR/nginx/templates/$service_name-upstream.conf"
+
+    if [ -f "$upstream_file" ]; then
+        echo "$service_name upstream state already exists. Keeping the current state."
+    else
+        cp "$upstream_template" "$upstream_file"
+        echo "$service_name upstream state initialized with Blue."
+    fi
+}
+
+initialize_upstream board
+initialize_upstream member
 
 if docker network inspect "$NETWORK_NAME" >/dev/null 2>&1; then
     echo "Docker network already exists: $NETWORK_NAME"
@@ -50,6 +58,7 @@ echo
 echo "Server directories:"
 echo "  $MYAPP_HOME/infra"
 echo "  $MYAPP_HOME/board"
+echo "  $MYAPP_HOME/member"
 
 echo
 echo "Running containers that publish port 80:"

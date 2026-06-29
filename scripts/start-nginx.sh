@@ -5,7 +5,6 @@ set -Eeuo pipefail
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 NETWORK_NAME="myapp-network"
 NGINX_CONTAINER="myapp-nginx"
-UPSTREAM_FILE="$PROJECT_DIR/nginx/conf.d/board-upstream.conf"
 
 require_command() {
     if ! command -v "$1" >/dev/null 2>&1; then
@@ -31,11 +30,15 @@ if ! docker network inspect "$NETWORK_NAME" >/dev/null 2>&1; then
     exit 1
 fi
 
-if [ ! -f "$UPSTREAM_FILE" ]; then
-    echo "Board upstream state does not exist: $UPSTREAM_FILE" >&2
-    echo "Run the bootstrap script first." >&2
-    exit 1
-fi
+for service_name in board member; do
+    upstream_file="$PROJECT_DIR/nginx/conf.d/$service_name-upstream.conf"
+
+    if [ ! -f "$upstream_file" ]; then
+        echo "Upstream state does not exist: $upstream_file" >&2
+        echo "Run the bootstrap script first." >&2
+        exit 1
+    fi
+done
 
 for container in myapp-board-blue-1 myapp-board-blue-2; do
     if [ "$(docker inspect --format '{{.State.Running}}' "$container" 2>/dev/null || true)" != true ]; then
