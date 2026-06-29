@@ -1,0 +1,18 @@
+name: myapp-infra
+
+services:
+  nginx:
+    image: nginx:stable-alpine
+    container_name: myapp-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+    networks:
+      - myapp-network
+
+networks:
+  myapp-network:
+    external: true
+    name: myapp-network
