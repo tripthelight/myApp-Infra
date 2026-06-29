@@ -8,6 +8,7 @@ SERVICE_NAME="${1:-}"
 TARGET="${2:-}"
 STABILIZATION_SECONDS="${STABILIZATION_SECONDS:-30}"
 CHECK_INTERVAL_SECONDS="${CHECK_INTERVAL_SECONDS:-2}"
+ROLLBACK_TEST_AFTER_SWITCH="${ROLLBACK_TEST_AFTER_SWITCH:-false}"
 
 usage() {
     echo "Usage: $0 service-name blue|green" >&2
@@ -20,6 +21,12 @@ usage() {
 if [[ ! "$STABILIZATION_SECONDS" =~ ^[1-9][0-9]*$ ]] || \
    [[ ! "$CHECK_INTERVAL_SECONDS" =~ ^[1-9][0-9]*$ ]]; then
     echo "Stabilization and check interval values must be positive integers." >&2
+    exit 1
+fi
+
+if [ "$ROLLBACK_TEST_AFTER_SWITCH" != true ] && \
+   [ "$ROLLBACK_TEST_AFTER_SWITCH" != false ]; then
+    echo "ROLLBACK_TEST_AFTER_SWITCH must be true or false." >&2
     exit 1
 fi
 
@@ -62,6 +69,12 @@ rollback() {
 
 echo "[1/2] Switch $SERVICE_NAME upstream: $CURRENT -> $TARGET"
 "$SWITCH_SCRIPT" "$SERVICE_NAME" "$TARGET"
+
+if [ "$ROLLBACK_TEST_AFTER_SWITCH" = true ]; then
+    test_container="$CONTAINER_PREFIX-$TARGET-1"
+    echo "[ROLLBACK TEST] Stop $test_container after the Nginx switch."
+    docker stop "$test_container" >/dev/null
+fi
 
 checks=$(((STABILIZATION_SECONDS + CHECK_INTERVAL_SECONDS - 1) / CHECK_INTERVAL_SECONDS))
 
