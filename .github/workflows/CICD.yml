@@ -1,0 +1,35 @@
+name: Validate myApp Infra
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Validate shell scripts
+        shell: bash
+        run: |
+          bash -n scripts/*.sh
+
+      - name: Validate Nginx compose file
+        shell: bash
+        run: |
+          docker compose -f compose.yml config --quiet
+
+      - name: Validate data compose syntax
+        shell: bash
+        run: |
+          docker compose -f compose.data.yml config --no-interpolate --quiet
