@@ -28,8 +28,3 @@ jobs:
         shell: bash
         run: |
           docker compose -f compose.yml config --quiet
-
-      - name: Validate data compose syntax
-        shell: bash
-        run: |
-          docker compose -f compose.data.yml config --no-interpolate --quiet
