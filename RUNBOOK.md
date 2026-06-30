@@ -180,3 +180,57 @@ docker system df
 docker image ls myapp-board
 docker image ls myapp-member
 ```
+
+## 9. 서버 Git 동기화 확인
+
+운영 서버에는 다음 3개 repo가 있다.
+
+| Repo | 역할 |
+| --- | --- |
+| `/home/um/myApp-Infra` | Nginx 설정, upstream 전환, 운영 점검 스크립트 |
+| `/home/um/myApp-Board` | Board 서버 repo 확인용 |
+| `/home/um/myApp-Member` | Member 서버 repo 확인용 |
+
+GitHub Actions의 Board/Member 배포는 Actions runner가 checkout한 최신 코드에서 실행된다. 하지만 Infra 전환 스크립트는 `/home/um/myApp-Infra`를 사용하므로, Infra repo는 특히 최신 상태여야 한다.
+
+서버 repo 상태 확인:
+
+```bash
+./scripts/check-server-repos.sh
+```
+
+정상 기준:
+
+- `Sync: OK`
+- `Local changes: none`
+- `Behind remote: 0`
+- `Ahead of remote: 0`
+
+수동 동기화:
+
+```bash
+cd /home/um/myApp-Infra
+git pull --ff-only
+
+cd /home/um/myApp-Board
+git pull --ff-only
+
+cd /home/um/myApp-Member
+git pull --ff-only
+```
+
+`git pull`이 로컬 수정 때문에 실패하면 먼저 어떤 파일이 바뀌었는지 확인한다.
+
+```bash
+git status
+git diff -- <file>
+```
+
+운영 중 생성되는 upstream 상태 파일은 Git에 올리지 않는다.
+
+```text
+nginx/conf.d/board-upstream.conf
+nginx/conf.d/member-upstream.conf
+nginx/conf.d/*.backup
+nginx/conf.d/*.next
+```
