@@ -8,6 +8,20 @@
 cd /home/um/myApp-Infra
 ```
 
+## 0. 전체 운영 점검
+
+평소에는 이 명령 하나로 서버 repo 동기화, 런타임 상태, 디스크 사용량을 함께 확인한다.
+
+```bash
+./scripts/check-all.sh
+```
+
+수행 순서:
+
+- 서버 Git 동기화 확인
+- Board/Member/Nginx 런타임 확인
+- 디스크/Docker 사용량 확인
+
 ## 1. 현재 운영 상태 확인
 
 가장 먼저 실행할 명령어다.
