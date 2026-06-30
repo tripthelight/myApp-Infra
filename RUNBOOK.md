@@ -151,3 +151,32 @@ docker logs --tail 200 myapp-nginx
 ```bash
 ./scripts/check-runtime-state.sh
 ```
+
+## 8. 디스크 사용량 점검
+
+Docker 이미지와 로그가 쌓이면 디스크가 먼저 위험해질 수 있다.
+
+```bash
+./scripts/check-disk-usage.sh
+```
+
+기본 경고 기준은 루트 파일시스템 사용량 `80%`다. 기준을 바꾸려면 다음처럼 실행한다.
+
+```bash
+WARN_PERCENT=70 ./scripts/check-disk-usage.sh
+```
+
+확인 항목:
+
+- `/` 파일시스템 사용량
+- Docker 전체 디스크 사용량
+- `myapp-board`, `myapp-member` 이미지 개수
+- 실행 중인 myApp 컨테이너 목록
+
+디스크가 부족할 때 우선 확인할 명령:
+
+```bash
+docker system df
+docker image ls myapp-board
+docker image ls myapp-member
+```
