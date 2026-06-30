@@ -16,7 +16,7 @@ echo "[2] Deploy new color: $NEW"
 
 docker compose -f compose.yml up -d board-$NEW-1 board-$NEW-2
 
-echo "[3] Health check"
+echo "[3] Health Check"
 
 for i in {1..15}; do
   sleep 2
