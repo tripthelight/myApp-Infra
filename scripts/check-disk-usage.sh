@@ -36,7 +36,7 @@ docker system df
 
 echo
 echo "[3/4] myApp image count"
-for image_name in myapp-board myapp-member; do
+for image_name in myapp-board myapp-member myapp-front; do
     count="$(docker image ls "$image_name" --format '{{.Repository}}:{{.Tag}}' | wc -l | awk '{print $1}')"
     echo "$image_name images: $count"
 done
@@ -47,6 +47,7 @@ docker ps \
     --filter 'name=myapp-nginx' \
     --filter 'name=myapp-board-' \
     --filter 'name=myapp-member-' \
+    --filter 'name=myapp-front-' \
     --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}'
 
 echo

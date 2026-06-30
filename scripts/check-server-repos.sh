@@ -8,6 +8,7 @@ REPOS=(
     "myApp-Infra"
     "myApp-Board"
     "myApp-Member"
+    "myApp-Front"
 )
 
 require_command() {

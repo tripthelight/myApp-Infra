@@ -84,22 +84,27 @@ if [ "$(docker inspect --format '{{.State.Running}}' "$NGINX_CONTAINER" 2>/dev/n
     exit 1
 fi
 
-echo "[1/4] Validate loaded Nginx configuration"
+echo "[1/5] Validate loaded Nginx configuration"
 docker exec "$NGINX_CONTAINER" nginx -t
 
-echo "[2/4] Check Board runtime state"
+echo "[2/5] Check Board runtime state"
 check_service board
 
 echo
-echo "[3/4] Check Member runtime state"
+echo "[3/5] Check Member runtime state"
 check_service member
 
 echo
-echo "[4/4] Running myApp containers"
+echo "[4/5] Check Front runtime state"
+check_service front
+
+echo
+echo "[5/5] Running myApp containers"
 docker ps \
     --filter 'name=myapp-nginx' \
     --filter 'name=myapp-board-' \
     --filter 'name=myapp-member-' \
+    --filter 'name=myapp-front-' \
     --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}'
 
 echo
