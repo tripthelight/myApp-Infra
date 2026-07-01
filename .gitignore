@@ -2,3 +2,5 @@ nginx/conf.d/*-upstream.conf
 nginx/conf.d/*.backup
 nginx/conf.d/*.next
 logs/
+
+secrets/
