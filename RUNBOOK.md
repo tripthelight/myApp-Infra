@@ -148,3 +148,108 @@ Verified Nginx upstream:
     server myapp-member-blue-2:8080;
     server myapp-board-blue-1:8080;
     server myapp-board-blue-2:8080;
+
+
+## Automatic Deployment From GitHub Push
+
+Current deployment model:
+
+    push to main
+    -> GitHub Actions
+    -> Ubuntu self-hosted runner
+    -> Docker image build
+    -> local blue/green deploy script
+    -> Nginx upstream switch
+    -> old containers removed
+
+## Front Automatic Deploy
+
+Repository:
+
+    https://github.com/tripthelight/myApp-Front
+
+Workflow:
+
+    Deploy Front Local
+
+Trigger:
+
+    push to main
+    manual Run workflow
+
+Build and deploy flow:
+
+    actions/checkout@v4
+    docker build -t myapp-front:${GITHUB_SHA} .
+    docker tag myapp-front:${GITHUB_SHA} myapp-front:latest
+    IMAGE_OVERRIDE="myapp-front:${GITHUB_SHA}" ./scripts/deploy-front.sh
+
+## Member Automatic Deploy
+
+Repository:
+
+    https://github.com/tripthelight/myApp-Member
+
+Workflow:
+
+    Deploy Member Local
+
+Trigger:
+
+    push to main
+    manual Run workflow
+
+Build and deploy flow:
+
+    actions/checkout@v4
+    ./mvnw clean package -DskipTests
+    docker build -t myapp-member:${GITHUB_SHA} .
+    docker tag myapp-member:${GITHUB_SHA} myapp-member:latest
+    IMAGE_OVERRIDE="myapp-member:${GITHUB_SHA}" ./scripts/deploy-member.sh
+
+## Board Automatic Deploy
+
+Repository:
+
+    https://github.com/tripthelight/myApp-Board
+
+Workflow:
+
+    Deploy Board Local
+
+Trigger:
+
+    push to main
+    manual Run workflow
+
+Build and deploy flow:
+
+    actions/checkout@v4
+    ./mvnw clean package -DskipTests
+    docker build -t myapp-board:${GITHUB_SHA} .
+    docker tag myapp-board:${GITHUB_SHA} myapp-board:latest
+    BOARD_IMAGE_TAG="${GITHUB_SHA}" ./scripts/deploy-board.sh
+
+## Current Verified Runtime Snapshot
+
+Current verified runtime state:
+
+    Front: green
+    Member: green
+    Board: green
+
+Current Nginx upstream:
+
+    server myapp-front-green-1:80;
+    server myapp-front-green-2:80;
+    server myapp-member-green-1:8080;
+    server myapp-member-green-2:8080;
+    server myapp-board-green-1:8080;
+    server myapp-board-green-2:8080;
+
+Git working trees verified clean:
+
+    /home/um/myApp-Infra
+    /home/um/myApp-Front
+    /home/um/myApp-Member
+    /home/um/myApp-Board
