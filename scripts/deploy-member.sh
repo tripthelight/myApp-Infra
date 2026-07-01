@@ -32,7 +32,11 @@ if ! docker inspect "$SOURCE_CONTAINER" >/dev/null 2>&1; then
   exit 1
 fi
 
-IMAGE="$(docker inspect -f '{{.Config.Image}}' "$SOURCE_CONTAINER")"
+if [ -n "${IMAGE_OVERRIDE:-}" ]; then
+  IMAGE="$IMAGE_OVERRIDE"
+else
+  IMAGE="$(docker inspect -f '{{.Config.Image}}' "$SOURCE_CONTAINER")"
+fi
 ENV_FILE="$(mktemp)"
 
 docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' "$SOURCE_CONTAINER" > "$ENV_FILE"
