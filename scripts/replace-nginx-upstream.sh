@@ -17,7 +17,10 @@ if [ ! -f "$NGINX_CONF" ]; then
   exit 1
 fi
 
-tmp_file="$(mktemp)"
+BACKUP_FILE="${NGINX_CONF}.backup"
+TMP_FILE="$(mktemp)"
+
+cp "$NGINX_CONF" "$BACKUP_FILE"
 
 awk -v service="$SERVICE" -v color="$COLOR" -v port="$PORT" -v count="$COUNT" '
   BEGIN { in_target = 0 }
@@ -40,12 +43,18 @@ awk -v service="$SERVICE" -v color="$COLOR" -v port="$PORT" -v count="$COUNT" '
   in_target == 0 {
     print
   }
-' "$NGINX_CONF" > "$tmp_file"
+' "$NGINX_CONF" > "$TMP_FILE"
 
-cp "$NGINX_CONF" "$NGINX_CONF.backup"
-mv "$tmp_file" "$NGINX_CONF"
+cp "$TMP_FILE" "$NGINX_CONF"
+rm -f "$TMP_FILE"
 
-docker exec myapp-nginx nginx -t
+if ! docker exec myapp-nginx nginx -t; then
+  echo "Nginx test failed. Restoring backup."
+  cp "$BACKUP_FILE" "$NGINX_CONF"
+  docker exec myapp-nginx nginx -t || true
+  exit 1
+fi
+
 docker exec myapp-nginx nginx -s reload
 
 echo "Updated upstream $SERVICE -> $COLOR"
