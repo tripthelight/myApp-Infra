@@ -4,7 +4,7 @@ set -Eeuo pipefail
 
 NGINX_CONTAINER="myapp-nginx"
 NETWORK_NAME="myapp-network"
-NGINX_CONF="${NGINX_CONF:-/home/um/myApp-Nginx/conf.d/default.conf}"
+NGINX_CONF="${NGINX_CONF:-/home/um/myApp-Infra/nginx/conf.d/default.conf}"
 
 require_command() {
     if ! command -v "$1" >/dev/null 2>&1; then
