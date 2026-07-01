@@ -5,10 +5,15 @@ SERVICE="${1:-}"
 COLOR="${2:-}"
 PORT="${3:-}"
 COUNT="${4:-2}"
-NGINX_CONF="${NGINX_CONF:-/home/um/myApp-Nginx/conf.d/default.conf}"
+NGINX_CONF="${NGINX_CONF:-/home/um/myApp-Infra/nginx/conf.d/default.conf}"
 
 if [ -z "$SERVICE" ] || [ -z "$COLOR" ] || [ -z "$PORT" ]; then
   echo "Usage: replace-nginx-upstream.sh <service> <color> <port> [count]"
+  exit 1
+fi
+
+if [ "$COLOR" != "blue" ] && [ "$COLOR" != "green" ]; then
+  echo "Invalid color: $COLOR"
   exit 1
 fi
 
