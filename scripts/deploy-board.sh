@@ -1,48 +1,82 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -Eeuo pipefail
 
-set +e
+INFRA_DIR="/home/um/myApp-Infra"
+BOARD_DIR="/home/um/myApp-Board"
+BOARD_IMAGE_NAME="myapp-board"
+BOARD_IMAGE_TAG="${BOARD_IMAGE_TAG:-local-board-jpa}"
+NETWORK_NAME="myapp-network"
+COLOR_FILE="/tmp/board-color"
+HEALTH_PATH="/board/hc"
 
-echo "[1] Detect current color"
+cd "$INFRA_DIR"
 
-CURRENT=$(cat /tmp/board-color || echo "blue")
+echo "[1] Detect current board color"
+
+CURRENT="$(cat "$COLOR_FILE" 2>/dev/null || echo "green")"
 
 if [ "$CURRENT" = "blue" ]; then
   NEW="green"
-else
+elif [ "$CURRENT" = "green" ]; then
   NEW="blue"
+else
+  echo "Invalid current color: $CURRENT"
+  exit 1
 fi
 
-echo "[2] Deploy new color: $NEW"
+echo "CURRENT=$CURRENT"
+echo "NEW=$NEW"
 
-docker compose -f compose.yml up -d board-$NEW-1 board-$NEW-2
+echo "[2] Load Board DB password"
 
-echo "[3] Health Check"
+BOARD_DB_PASSWORD="$(docker exec myapp-mariadb cat /run/secrets/mariadb_root)"
 
-for i in {1..15}; do
-  sleep 2
+if [ -z "$BOARD_DB_PASSWORD" ]; then
+  echo "BOARD_DB_PASSWORD is empty"
+  exit 1
+fi
 
-  STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-  http://127.0.0.1/board/hc || echo "FAIL")
+echo "[3] Start new board containers"
 
-  if [ "$STATUS" != "200" ]; then
-    echo "FAIL DETECTED → ROLLBACK"
+IMAGE_NAME="$BOARD_IMAGE_NAME" \
+IMAGE_TAG="$BOARD_IMAGE_TAG" \
+BOARD_DB_PASSWORD="$BOARD_DB_PASSWORD" \
+docker compose -f "$BOARD_DIR/deploy/docker-compose-$NEW.yml" up -d
 
-    ./scripts/rollback-board.sh "$CURRENT"
+echo "[4] Health check new board containers"
+
+for SERVER in "myapp-board-$NEW-1" "myapp-board-$NEW-2"; do
+  echo "Checking $SERVER"
+
+  OK="false"
+
+  for i in $(seq 1 30); do
+    if docker run --rm --network "$NETWORK_NAME" busybox:1.36 \
+      wget -q -O- "http://$SERVER:8080$HEALTH_PATH" >/dev/null 2>&1; then
+      OK="true"
+      echo "$SERVER OK"
+      break
+    fi
+
+    echo "$SERVER waiting... $i"
+    sleep 2
+  done
+
+  if [ "$OK" != "true" ]; then
+    echo "$SERVER health check failed"
+    ./scripts/rollback-board.sh "$CURRENT" "$NEW"
     exit 1
   fi
-
-  echo "check $i OK"
 done
 
-echo "[4] Switch nginx"
+echo "[5] Switch nginx board upstream"
 
 ./scripts/switch-board-upstream.sh "$NEW"
 
-echo "$NEW" > /tmp/board-color
+echo "$NEW" > "$COLOR_FILE"
 
-echo "[5] Stop old containers"
+echo "[6] Stop old board containers"
 
-docker rm -f board-$CURRENT-1 || true
-docker rm -f board-$CURRENT-2 || true
+docker rm -f "myapp-board-$CURRENT-1" "myapp-board-$CURRENT-2" || true
 
-echo "DEPLOY SUCCESS"
+echo "DEPLOY SUCCESS: board $CURRENT -> $NEW"

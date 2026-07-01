@@ -1,12 +1,24 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -Eeuo pipefail
 
-OLD=$1
+CURRENT="${1:-}"
+FAILED_NEW="${2:-}"
 
-echo "ROLLBACK TO: $OLD"
+if [ -z "$CURRENT" ]; then
+  echo "Usage: rollback-board.sh <current-color> [failed-new-color]"
+  exit 1
+fi
 
-./scripts/switch-board-upstream.sh "$OLD"
+echo "ROLLBACK TO: $CURRENT"
 
-docker start myapp-board-$OLD-1 || true
-docker start myapp-board-$OLD-2 || true
+./scripts/switch-board-upstream.sh "$CURRENT"
+
+docker start "myapp-board-$CURRENT-1" "myapp-board-$CURRENT-2" || true
+
+if [ -n "$FAILED_NEW" ]; then
+  docker rm -f "myapp-board-$FAILED_NEW-1" "myapp-board-$FAILED_NEW-2" || true
+fi
+
+echo "$CURRENT" > /tmp/board-color
 
 echo "ROLLBACK DONE"
