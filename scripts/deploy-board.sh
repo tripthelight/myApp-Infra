@@ -7,45 +7,12 @@ BOARD_IMAGE_NAME="myapp-board"
 BOARD_IMAGE_TAG="${BOARD_IMAGE_TAG:-local-board-jpa}"
 NETWORK_NAME="myapp-network"
 COLOR_FILE="/tmp/board-color"
-NGINX_CONF="/home/um/myApp-Nginx/conf.d/default.conf"
-
-replace_board_upstream() {
-  local color="$1"
-  local tmp_file
-
-  tmp_file="$(mktemp)"
-
-  awk -v color="$color" '
-    BEGIN { in_board = 0 }
-
-    /^upstream board[[:space:]]*\{/ {
-      print "upstream board {"
-      print "    server myapp-board-" color "-1:8080;"
-      print "    server myapp-board-" color "-2:8080;"
-      print "}"
-      in_board = 1
-      next
-    }
-
-    in_board == 1 && /^\}/ {
-      in_board = 0
-      next
-    }
-
-    in_board == 0 {
-      print
-    }
-  ' "$NGINX_CONF" > "$tmp_file"
-
-  cp "$NGINX_CONF" "$NGINX_CONF.backup"
-  mv "$tmp_file" "$NGINX_CONF"
-}
 
 cd "$INFRA_DIR"
 
 echo "[1] Detect current board color"
 
-CURRENT="$(cat "$COLOR_FILE" 2>/dev/null || echo "blue")"
+CURRENT="$(cat "$COLOR_FILE" 2>/dev/null || echo "green")"
 
 if [ "$CURRENT" = "blue" ]; then
   NEW="green"
@@ -101,12 +68,9 @@ for SERVER in "myapp-board-$NEW-1" "myapp-board-$NEW-2"; do
   fi
 done
 
-echo "[5] Switch only nginx board upstream"
+echo "[5] Switch nginx board upstream"
 
-replace_board_upstream "$NEW"
-
-docker exec myapp-nginx nginx -t
-docker exec myapp-nginx nginx -s reload
+./scripts/replace-nginx-upstream.sh board "$NEW" 8080 2
 
 echo "$NEW" > "$COLOR_FILE"
 
