@@ -5,10 +5,39 @@ set -Eeuo pipefail
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 NETWORK_NAME="myapp-network"
 NGINX_CONTAINER="myapp-nginx"
+NGINX_CONF="${NGINX_CONF:-/home/um/myApp-Nginx/conf.d/default.conf}"
 
 require_command() {
     if ! command -v "$1" >/dev/null 2>&1; then
         echo "Required command not found: $1" >&2
+        exit 1
+    fi
+}
+
+service_port() {
+    case "$1" in
+        front) echo 80 ;;
+        member|board) echo 8080 ;;
+        *)
+            echo "Unknown service: $1" >&2
+            return 1
+            ;;
+    esac
+}
+
+detect_active_color() {
+    service_name="$1"
+    port="$(service_port "$service_name")"
+    container_prefix="myapp-$service_name"
+
+    if grep -Fq "$container_prefix-blue-1:$port" "$NGINX_CONF" && \
+       grep -Fq "$container_prefix-blue-2:$port" "$NGINX_CONF"; then
+        echo blue
+    elif grep -Fq "$container_prefix-green-1:$port" "$NGINX_CONF" && \
+         grep -Fq "$container_prefix-green-2:$port" "$NGINX_CONF"; then
+        echo green
+    else
+        echo "Could not determine the active $service_name color." >&2
         exit 1
     fi
 }
@@ -30,34 +59,12 @@ if ! docker network inspect "$NETWORK_NAME" >/dev/null 2>&1; then
     exit 1
 fi
 
-for service_name in board member; do
-    upstream_file="$PROJECT_DIR/nginx/conf.d/$service_name-upstream.conf"
+if [ ! -f "$NGINX_CONF" ]; then
+    echo "Nginx config does not exist: $NGINX_CONF" >&2
+    exit 1
+fi
 
-    if [ ! -f "$upstream_file" ]; then
-        echo "Upstream state does not exist: $upstream_file" >&2
-        echo "Run the bootstrap script first." >&2
-        exit 1
-    fi
-done
-
-detect_active_color() {
-    service_name="$1"
-    upstream_file="$PROJECT_DIR/nginx/conf.d/$service_name-upstream.conf"
-    container_prefix="myapp-$service_name"
-
-    if grep -Fq "$container_prefix-blue-1:8080" "$upstream_file" && \
-       grep -Fq "$container_prefix-blue-2:8080" "$upstream_file"; then
-        echo blue
-    elif grep -Fq "$container_prefix-green-1:8080" "$upstream_file" && \
-         grep -Fq "$container_prefix-green-2:8080" "$upstream_file"; then
-        echo green
-    else
-        echo "Could not determine the active $service_name color." >&2
-        exit 1
-    fi
-}
-
-for service_name in board member; do
+for service_name in front member board; do
     active_color="$(detect_active_color "$service_name")"
 
     for instance in 1 2; do
@@ -81,12 +88,14 @@ docker compose up -d
 echo "[3/4] Validate loaded Nginx configuration"
 docker exec "$NGINX_CONTAINER" nginx -t
 
-echo "[4/4] Request /board/hc and /member/hc"
+echo "[4/4] Request /, /member/hc, and /board/hc"
 for attempt in $(seq 1 30); do
     if docker exec "$NGINX_CONTAINER" \
-        wget -q -T 2 -O /dev/null http://127.0.0.1/board/hc && \
+        wget -q -T 2 -O /dev/null http://127.0.0.1/ && \
        docker exec "$NGINX_CONTAINER" \
-        wget -q -T 2 -O /dev/null http://127.0.0.1/member/hc; then
+        wget -q -T 2 -O /dev/null http://127.0.0.1/member/hc && \
+       docker exec "$NGINX_CONTAINER" \
+        wget -q -T 2 -O /dev/null http://127.0.0.1/board/hc; then
         break
     fi
 
@@ -100,7 +109,12 @@ for attempt in $(seq 1 30); do
     sleep 2
 done
 
-for service_name in board member; do
+printf 'front: '
+docker exec "$NGINX_CONTAINER" \
+    wget -q -T 2 -O /dev/null "http://127.0.0.1/"
+echo "OK"
+
+for service_name in member board; do
     printf '%s: ' "$service_name"
     docker exec "$NGINX_CONTAINER" \
         wget -q -T 2 -O - "http://127.0.0.1/$service_name/hc"
