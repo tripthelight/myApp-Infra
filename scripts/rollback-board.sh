@@ -19,6 +19,6 @@ if [ -n "$FAILED_NEW" ]; then
   docker rm -f "myapp-board-$FAILED_NEW-1" "myapp-board-$FAILED_NEW-2" || true
 fi
 
-echo "$CURRENT" > /tmp/board-color
+echo "$CURRENT" > /home/um/myApp-Infra/runtime/board-color
 
 echo "ROLLBACK DONE"

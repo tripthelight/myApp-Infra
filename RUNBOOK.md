@@ -29,9 +29,9 @@ Main access URL from Windows browser:
 
 ## Check Current Active Colors
 
-    cat /tmp/front-color
-    cat /tmp/member-color
-    cat /tmp/board-color
+    cat /home/um/myApp-Infra/runtime/front-color
+    cat /home/um/myApp-Infra/runtime/member-color
+    cat /home/um/myApp-Infra/runtime/board-color
 
 ## Check Runtime Containers
 

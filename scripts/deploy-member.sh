@@ -3,7 +3,7 @@ set -Eeuo pipefail
 
 INFRA_DIR="/home/um/myApp-Infra"
 NETWORK_NAME="myapp-network"
-COLOR_FILE="/tmp/member-color"
+COLOR_FILE="/home/um/myApp-Infra/runtime/member-color"
 SERVICE="member"
 PORT="8080"
 

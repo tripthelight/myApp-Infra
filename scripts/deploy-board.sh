@@ -6,7 +6,7 @@ BOARD_DIR="/home/um/myApp-Board"
 BOARD_IMAGE_NAME="myapp-board"
 BOARD_IMAGE_TAG="${BOARD_IMAGE_TAG:-local-board-jpa}"
 NETWORK_NAME="myapp-network"
-COLOR_FILE="/tmp/board-color"
+COLOR_FILE="/home/um/myApp-Infra/runtime/board-color"
 
 cd "$INFRA_DIR"
 

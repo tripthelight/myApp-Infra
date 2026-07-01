@@ -4,3 +4,5 @@ nginx/conf.d/*.next
 logs/
 
 secrets/
+
+runtime/
