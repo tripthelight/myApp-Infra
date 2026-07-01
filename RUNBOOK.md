@@ -59,3 +59,92 @@ replace-nginx-upstream.sh updates only one upstream block at a time.
 This prevents Front, Member, and Board deployments from overwriting each other's Nginx upstream settings.
 
 If nginx -t fails during upstream replacement, the script restores the previous Nginx config backup.
+
+
+## GitHub Actions Manual Deploy
+
+Each service repository has a manual GitHub Actions workflow.
+
+### Front
+
+Repository:
+
+    https://github.com/tripthelight/myApp-Front
+
+Workflow:
+
+    Deploy Front Local
+
+GitHub path:
+
+    myApp-Front -> Actions -> Deploy Front Local -> Run workflow
+
+This workflow runs:
+
+    cd /home/um/myApp-Infra
+    ./scripts/deploy-front.sh
+
+### Member
+
+Repository:
+
+    https://github.com/tripthelight/myApp-Member
+
+Workflow:
+
+    Deploy Member Local
+
+GitHub path:
+
+    myApp-Member -> Actions -> Deploy Member Local -> Run workflow
+
+This workflow runs:
+
+    cd /home/um/myApp-Infra
+    ./scripts/deploy-member.sh
+
+### Board
+
+Repository:
+
+    https://github.com/tripthelight/myApp-Board
+
+Workflow:
+
+    Deploy Board Local
+
+GitHub path:
+
+    myApp-Board -> Actions -> Deploy Board Local -> Run workflow
+
+This workflow runs:
+
+    cd /home/um/myApp-Infra
+    ./scripts/deploy-board.sh
+
+## Verified Actions Result
+
+Front manual deployment was verified successfully.
+
+Verified flow:
+
+    GitHub Run workflow
+    -> Ubuntu self-hosted runner
+    -> /home/um/myApp-Infra/scripts/deploy-front.sh
+    -> Nginx upstream switch
+    -> old Front containers removed
+
+Verified runtime state after Actions deploy:
+
+    Front: blue
+    Member: blue
+    Board: blue
+
+Verified Nginx upstream:
+
+    server myapp-front-blue-1:80;
+    server myapp-front-blue-2:80;
+    server myapp-member-blue-1:8080;
+    server myapp-member-blue-2:8080;
+    server myapp-board-blue-1:8080;
+    server myapp-board-blue-2:8080;
