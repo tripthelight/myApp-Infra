@@ -7,6 +7,7 @@ BOARD_IMAGE_NAME="myapp-board"
 BOARD_IMAGE_TAG="${BOARD_IMAGE_TAG:-local-board-jpa}"
 NETWORK_NAME="myapp-network"
 COLOR_FILE="/tmp/board-color"
+NGINX_CONF="/home/um/myApp-Nginx/conf.d/default.conf"
 
 cd "$INFRA_DIR"
 
@@ -68,9 +69,50 @@ for SERVER in "myapp-board-$NEW-1" "myapp-board-$NEW-2"; do
   fi
 done
 
-echo "[5] Switch nginx board upstream"
+echo "[5] Switch nginx board upstream directly"
 
-./scripts/switch-board-upstream.sh "$NEW"
+cp "$NGINX_CONF" "$NGINX_CONF.backup"
+
+cat > "$NGINX_CONF" <<EOF
+upstream front {
+    server myapp-front-green-1:80;
+    server myapp-front-green-2:80;
+}
+
+upstream member {
+    server myapp-member-green-1:8080;
+    server myapp-member-green-2:8080;
+}
+
+upstream board {
+    server myapp-board-$NEW-1:8080;
+    server myapp-board-$NEW-2:8080;
+}
+
+server {
+    listen 80;
+    server_name localhost;
+
+    location = /member {
+        return 301 /member/;
+    }
+
+    location /member/ {
+        proxy_pass http://member/;
+    }
+
+    location /board {
+        proxy_pass http://board;
+    }
+
+    location / {
+        proxy_pass http://front;
+    }
+}
+EOF
+
+docker exec myapp-nginx nginx -t
+docker exec myapp-nginx nginx -s reload
 
 echo "$NEW" > "$COLOR_FILE"
 
