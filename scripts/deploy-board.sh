@@ -7,7 +7,6 @@ BOARD_IMAGE_NAME="myapp-board"
 BOARD_IMAGE_TAG="${BOARD_IMAGE_TAG:-local-board-jpa}"
 NETWORK_NAME="myapp-network"
 COLOR_FILE="/tmp/board-color"
-HEALTH_PATH="/board/hc"
 
 cd "$INFRA_DIR"
 
@@ -46,13 +45,13 @@ docker compose -f "$BOARD_DIR/deploy/docker-compose-$NEW.yml" up -d
 echo "[4] Health check new board containers"
 
 for SERVER in "myapp-board-$NEW-1" "myapp-board-$NEW-2"; do
-  echo "Checking $SERVER"
+  echo "Checking $SERVER:8080"
 
   OK="false"
 
   for i in $(seq 1 30); do
     if docker run --rm --network "$NETWORK_NAME" busybox:1.36 \
-      wget -q -O- "http://$SERVER:8080$HEALTH_PATH" >/dev/null 2>&1; then
+      nc -z -w 2 "$SERVER" 8080 >/dev/null 2>&1; then
       OK="true"
       echo "$SERVER OK"
       break
