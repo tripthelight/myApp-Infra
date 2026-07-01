@@ -9,11 +9,43 @@ NETWORK_NAME="myapp-network"
 COLOR_FILE="/tmp/board-color"
 NGINX_CONF="/home/um/myApp-Nginx/conf.d/default.conf"
 
+replace_board_upstream() {
+  local color="$1"
+  local tmp_file
+
+  tmp_file="$(mktemp)"
+
+  awk -v color="$color" '
+    BEGIN { in_board = 0 }
+
+    /^upstream board[[:space:]]*\{/ {
+      print "upstream board {"
+      print "    server myapp-board-" color "-1:8080;"
+      print "    server myapp-board-" color "-2:8080;"
+      print "}"
+      in_board = 1
+      next
+    }
+
+    in_board == 1 && /^\}/ {
+      in_board = 0
+      next
+    }
+
+    in_board == 0 {
+      print
+    }
+  ' "$NGINX_CONF" > "$tmp_file"
+
+  cp "$NGINX_CONF" "$NGINX_CONF.backup"
+  mv "$tmp_file" "$NGINX_CONF"
+}
+
 cd "$INFRA_DIR"
 
 echo "[1] Detect current board color"
 
-CURRENT="$(cat "$COLOR_FILE" 2>/dev/null || echo "green")"
+CURRENT="$(cat "$COLOR_FILE" 2>/dev/null || echo "blue")"
 
 if [ "$CURRENT" = "blue" ]; then
   NEW="green"
@@ -69,47 +101,9 @@ for SERVER in "myapp-board-$NEW-1" "myapp-board-$NEW-2"; do
   fi
 done
 
-echo "[5] Switch nginx board upstream directly"
+echo "[5] Switch only nginx board upstream"
 
-cp "$NGINX_CONF" "$NGINX_CONF.backup"
-
-cat > "$NGINX_CONF" <<EOF
-upstream front {
-    server myapp-front-green-1:80;
-    server myapp-front-green-2:80;
-}
-
-upstream member {
-    server myapp-member-green-1:8080;
-    server myapp-member-green-2:8080;
-}
-
-upstream board {
-    server myapp-board-$NEW-1:8080;
-    server myapp-board-$NEW-2:8080;
-}
-
-server {
-    listen 80;
-    server_name localhost;
-
-    location = /member {
-        return 301 /member/;
-    }
-
-    location /member/ {
-        proxy_pass http://member/;
-    }
-
-    location /board {
-        proxy_pass http://board;
-    }
-
-    location / {
-        proxy_pass http://front;
-    }
-}
-EOF
+replace_board_upstream "$NEW"
 
 docker exec myapp-nginx nginx -t
 docker exec myapp-nginx nginx -s reload
