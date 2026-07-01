@@ -1,5 +1,14 @@
 # myApp Infra Runbook
 
+# myApp Infra Runbook
+
+이 문서는 운영 서버에서 배포 상태를 확인하고, 장애가 났을 때 빠르게 복구하기 위한 절차서다.
+
+## 기본 위치
+
+```bash
+cd /home/um/myApp-Infra
+
 ## Current Blue/Green Deployment Commands
 
 Current verified runtime state:
