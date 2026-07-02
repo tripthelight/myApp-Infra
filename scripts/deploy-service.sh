@@ -108,7 +108,7 @@ write_default_conf_for_target() {
     mv "$tmp_file" "$DEFAULT_CONF"
 }
 
-verify_proxy() {
+verify_proxy_once() {
     target="$1"
     response="$(docker exec "$NGINX_CONTAINER" \
         wget -q -T 2 -O - "http://127.0.0.1$PROXY_HEALTH_PATH" || true)"
@@ -124,6 +124,22 @@ verify_proxy() {
     fi
 
     echo "Proxy response OK: $PROXY_HEALTH_PATH"
+}
+
+verify_proxy() {
+    target="$1"
+
+    for attempt in $(seq 1 10); do
+        echo "Proxy health check $SERVICE_NAME $target: $attempt/10"
+
+        if verify_proxy_once "$target"; then
+            return 0
+        fi
+
+        sleep 1
+    done
+
+    return 1
 }
 
 cleanup_target() {
