@@ -31,21 +31,15 @@ mkdir -p \
     "$MYAPP_HOME/board" \
     "$MYAPP_HOME/member"
 
-initialize_upstream() {
-    service_name="$1"
-    upstream_file="$PROJECT_DIR/nginx/conf.d/$service_name-upstream.conf"
-    upstream_template="$PROJECT_DIR/nginx/templates/$service_name-upstream.conf"
+DEFAULT_CONF="$PROJECT_DIR/nginx/conf.d/default.conf"
+DEFAULT_TEMPLATE="$PROJECT_DIR/nginx/templates/default.conf"
 
-    if [ -f "$upstream_file" ]; then
-        echo "$service_name upstream state already exists. Keeping the current state."
-    else
-        cp "$upstream_template" "$upstream_file"
-        echo "$service_name upstream state initialized with Blue."
-    fi
-}
-
-initialize_upstream board
-initialize_upstream member
+if [ -f "$DEFAULT_CONF" ]; then
+    echo "Nginx default config already exists. Keeping the current runtime state."
+else
+    cp "$DEFAULT_TEMPLATE" "$DEFAULT_CONF"
+    echo "Nginx default config initialized from template."
+fi
 
 if docker network inspect "$NETWORK_NAME" >/dev/null 2>&1; then
     echo "Docker network already exists: $NETWORK_NAME"
