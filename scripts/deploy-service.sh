@@ -250,10 +250,10 @@ if [ "$SERVICE_NAME" = member ] || [ "$SERVICE_NAME" = board ]; then
         fi
 
         DOCKER_ENV_ARGS+=(
-            -e CORS_ALLOWED_ORIGIN="${CORS_ALLOWED_ORIGIN:-http://localhost}"
-            -e OAUTH2_SUCCESS_REDIRECT_URL="${OAUTH2_SUCCESS_REDIRECT_URL:-http://localhost/cookie}"
-            -e GOOGLE_REDIRECT_URI="${GOOGLE_REDIRECT_URI:-http://localhost/member/login/oauth2/code/google}"
-            -e NAVER_REDIRECT_URI="${NAVER_REDIRECT_URI:-http://localhost/member/login/oauth2/code/naver}"
+            -e CORS_ALLOWED_ORIGIN="${CORS_ALLOWED_ORIGIN:-http://127.0.0.1:8080}"
+            -e OAUTH2_SUCCESS_REDIRECT_URL="${OAUTH2_SUCCESS_REDIRECT_URL:-http://127.0.0.1:8080/cookie}"
+            -e GOOGLE_REDIRECT_URI="${GOOGLE_REDIRECT_URI:-http://127.0.0.1:8080/member/login/oauth2/code/google}"
+            -e NAVER_REDIRECT_URI="${NAVER_REDIRECT_URI:-http://127.0.0.1:8080/member/login/oauth2/code/naver}"
         )
     else
         BOARD_DB_NAME="${BOARD_DB_NAME:-myapp_board}"
