@@ -5,7 +5,8 @@ set -Eeuo pipefail
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 NETWORK_NAME="myapp-network"
 NGINX_CONTAINER="myapp-nginx"
-NGINX_CONF="${NGINX_CONF:-/home/um/myApp-Nginx/conf.d/default.conf}"
+NGINX_CONF="${NGINX_CONF:-$PROJECT_DIR/nginx/conf.d/default.conf}"
+NGINX_TEMPLATE="$PROJECT_DIR/nginx/templates/default.conf"
 
 require_command() {
     if ! command -v "$1" >/dev/null 2>&1; then
@@ -37,7 +38,7 @@ detect_active_color() {
          grep -Fq "$container_prefix-green-2:$port" "$NGINX_CONF"; then
         echo green
     else
-        echo "Could not determine the active $service_name color." >&2
+        echo "Could not determine the active $service_name color from $NGINX_CONF." >&2
         exit 1
     fi
 }
@@ -59,9 +60,11 @@ if ! docker network inspect "$NETWORK_NAME" >/dev/null 2>&1; then
     exit 1
 fi
 
+mkdir -p "$PROJECT_DIR/nginx/conf.d"
+
 if [ ! -f "$NGINX_CONF" ]; then
-    echo "Nginx config does not exist: $NGINX_CONF" >&2
-    exit 1
+    cp "$NGINX_TEMPLATE" "$NGINX_CONF"
+    echo "Nginx default config initialized from template."
 fi
 
 for service_name in front member board; do
@@ -82,8 +85,8 @@ cd "$PROJECT_DIR"
 echo "[1/4] Validate Docker Compose configuration"
 docker compose config >/dev/null
 
-echo "[2/4] Start Nginx"
-docker compose up -d
+echo "[2/4] Recreate Nginx"
+docker compose up -d --force-recreate nginx
 
 echo "[3/4] Validate loaded Nginx configuration"
 docker exec "$NGINX_CONTAINER" nginx -t
