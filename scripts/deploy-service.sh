@@ -215,6 +215,46 @@ if [ "$SERVICE_NAME" = member ] || [ "$SERVICE_NAME" = board ]; then
         DOCKER_ENV_ARGS+=(
             -e JWT_SECRET="$JWT_SECRET"
         )
+
+        GOOGLE_CLIENT_ID_FILE="${GOOGLE_CLIENT_ID_FILE:-$PROJECT_DIR/secrets/google_client_id.txt}"
+        GOOGLE_CLIENT_SECRET_FILE="${GOOGLE_CLIENT_SECRET_FILE:-$PROJECT_DIR/secrets/google_client_secret.txt}"
+        NAVER_CLIENT_ID_FILE="${NAVER_CLIENT_ID_FILE:-$PROJECT_DIR/secrets/naver_client_id.txt}"
+        NAVER_CLIENT_SECRET_FILE="${NAVER_CLIENT_SECRET_FILE:-$PROJECT_DIR/secrets/naver_client_secret.txt}"
+
+        if [ -f "$GOOGLE_CLIENT_ID_FILE" ]; then
+            GOOGLE_CLIENT_ID="$(tr -d '\r\n' < "$GOOGLE_CLIENT_ID_FILE")"
+            DOCKER_ENV_ARGS+=(
+                -e GOOGLE_CLIENT_ID="$GOOGLE_CLIENT_ID"
+            )
+        fi
+
+        if [ -f "$GOOGLE_CLIENT_SECRET_FILE" ]; then
+            GOOGLE_CLIENT_SECRET="$(tr -d '\r\n' < "$GOOGLE_CLIENT_SECRET_FILE")"
+            DOCKER_ENV_ARGS+=(
+                -e GOOGLE_CLIENT_SECRET="$GOOGLE_CLIENT_SECRET"
+            )
+        fi
+
+        if [ -f "$NAVER_CLIENT_ID_FILE" ]; then
+            NAVER_CLIENT_ID="$(tr -d '\r\n' < "$NAVER_CLIENT_ID_FILE")"
+            DOCKER_ENV_ARGS+=(
+                -e NAVER_CLIENT_ID="$NAVER_CLIENT_ID"
+            )
+        fi
+
+        if [ -f "$NAVER_CLIENT_SECRET_FILE" ]; then
+            NAVER_CLIENT_SECRET="$(tr -d '\r\n' < "$NAVER_CLIENT_SECRET_FILE")"
+            DOCKER_ENV_ARGS+=(
+                -e NAVER_CLIENT_SECRET="$NAVER_CLIENT_SECRET"
+            )
+        fi
+
+        DOCKER_ENV_ARGS+=(
+            -e CORS_ALLOWED_ORIGIN="${CORS_ALLOWED_ORIGIN:-http://localhost}"
+            -e OAUTH2_SUCCESS_REDIRECT_URL="${OAUTH2_SUCCESS_REDIRECT_URL:-http://localhost/cookie}"
+            -e GOOGLE_REDIRECT_URI="${GOOGLE_REDIRECT_URI:-http://localhost/member/login/oauth2/code/google}"
+            -e NAVER_REDIRECT_URI="${NAVER_REDIRECT_URI:-http://localhost/member/login/oauth2/code/naver}"
+        )
     else
         BOARD_DB_NAME="${BOARD_DB_NAME:-myapp_board}"
         BOARD_DB_URL="${BOARD_DB_URL:-jdbc:mariadb://myapp-mariadb:3306/$BOARD_DB_NAME?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Seoul}"
