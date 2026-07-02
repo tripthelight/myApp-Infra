@@ -180,13 +180,13 @@ if [ "$SERVICE_NAME" = member ] || [ "$SERVICE_NAME" = board ]; then
 
     MARIADB_ROOT_PASSWORD="$(tr -d '\r\n' < "$MARIADB_ROOT_PASSWORD_FILE")"
 
-    DOCKER_ENV_ARGS+=(
-        -e SPRING_DATASOURCE_URL="${SPRING_DATASOURCE_URL:-jdbc:mariadb://myapp-mariadb:3306/myapp}"
-        -e SPRING_DATASOURCE_USERNAME="${SPRING_DATASOURCE_USERNAME:-root}"
-        -e SPRING_DATASOURCE_PASSWORD="$MARIADB_ROOT_PASSWORD"
-    )
-
     if [ "$SERVICE_NAME" = member ]; then
+        DOCKER_ENV_ARGS+=(
+            -e SPRING_DATASOURCE_URL="${SPRING_DATASOURCE_URL:-jdbc:mariadb://myapp-mariadb:3306/myapp}"
+            -e SPRING_DATASOURCE_USERNAME="${SPRING_DATASOURCE_USERNAME:-root}"
+            -e SPRING_DATASOURCE_PASSWORD="$MARIADB_ROOT_PASSWORD"
+        )
+
         JWT_SECRET_FILE="${JWT_SECRET_FILE:-$PROJECT_DIR/secrets/jwt_secret.txt}"
 
         if [ ! -f "$JWT_SECRET_FILE" ]; then
@@ -198,6 +198,26 @@ if [ "$SERVICE_NAME" = member ] || [ "$SERVICE_NAME" = board ]; then
 
         DOCKER_ENV_ARGS+=(
             -e JWT_SECRET="$JWT_SECRET"
+        )
+    else
+        BOARD_DB_NAME="${BOARD_DB_NAME:-myapp_board}"
+        BOARD_DB_URL="${BOARD_DB_URL:-jdbc:mariadb://myapp-mariadb:3306/$BOARD_DB_NAME?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Seoul}"
+        BOARD_DB_USERNAME="${BOARD_DB_USERNAME:-root}"
+
+        if [[ ! "$BOARD_DB_NAME" =~ ^[A-Za-z0-9_]+$ ]]; then
+            echo "BOARD_DB_NAME must contain only letters, numbers, and underscores." >&2
+            exit 1
+        fi
+
+        docker exec \
+            -e MYSQL_PWD="$MARIADB_ROOT_PASSWORD" \
+            myapp-mariadb \
+            mariadb -uroot -e "CREATE DATABASE IF NOT EXISTS \`$BOARD_DB_NAME\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+
+        DOCKER_ENV_ARGS+=(
+            -e BOARD_DB_URL="$BOARD_DB_URL"
+            -e BOARD_DB_USERNAME="$BOARD_DB_USERNAME"
+            -e BOARD_DB_PASSWORD="$MARIADB_ROOT_PASSWORD"
         )
     fi
 fi
