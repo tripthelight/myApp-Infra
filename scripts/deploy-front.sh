@@ -4,4 +4,4 @@ set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-exec "$SCRIPT_DIR/deploy-service.sh" front 80 / /
+exec bash "$SCRIPT_DIR/deploy-service.sh" front 80 / /
