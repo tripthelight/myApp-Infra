@@ -7,3 +7,5 @@ logs/
 secrets/
 
 runtime/
+
+backups/
