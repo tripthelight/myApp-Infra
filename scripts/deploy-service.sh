@@ -185,6 +185,21 @@ if [ "$SERVICE_NAME" = member ] || [ "$SERVICE_NAME" = board ]; then
         -e SPRING_DATASOURCE_USERNAME="${SPRING_DATASOURCE_USERNAME:-root}"
         -e SPRING_DATASOURCE_PASSWORD="$MARIADB_ROOT_PASSWORD"
     )
+
+    if [ "$SERVICE_NAME" = member ]; then
+        JWT_SECRET_FILE="${JWT_SECRET_FILE:-$PROJECT_DIR/secrets/jwt_secret.txt}"
+
+        if [ ! -f "$JWT_SECRET_FILE" ]; then
+            echo "JWT secret file does not exist: $JWT_SECRET_FILE" >&2
+            exit 1
+        fi
+
+        JWT_SECRET="$(tr -d '\r\n' < "$JWT_SECRET_FILE")"
+
+        DOCKER_ENV_ARGS+=(
+            -e JWT_SECRET="$JWT_SECRET"
+        )
+    fi
 fi
 
 for instance in 1 2; do
