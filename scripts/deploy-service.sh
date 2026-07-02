@@ -165,15 +165,36 @@ echo "Image: $IMAGE_OVERRIDE"
 echo "[1/7] Start $SERVICE_NAME $TARGET containers"
 cleanup_target "$TARGET"
 
+DOCKER_ENV_ARGS=(
+    -e APP_COLOR="$TARGET"
+    -e SERVER_PORT="$SERVICE_PORT"
+)
+
+if [ "$SERVICE_NAME" = member ] || [ "$SERVICE_NAME" = board ]; then
+    MARIADB_ROOT_PASSWORD_FILE="${MARIADB_ROOT_PASSWORD_FILE:-$PROJECT_DIR/secrets/mariadb_root.txt}"
+
+    if [ ! -f "$MARIADB_ROOT_PASSWORD_FILE" ]; then
+        echo "MariaDB root password file does not exist: $MARIADB_ROOT_PASSWORD_FILE" >&2
+        exit 1
+    fi
+
+    MARIADB_ROOT_PASSWORD="$(tr -d '\r\n' < "$MARIADB_ROOT_PASSWORD_FILE")"
+
+    DOCKER_ENV_ARGS+=(
+        -e SPRING_DATASOURCE_URL="${SPRING_DATASOURCE_URL:-jdbc:mariadb://myapp-mariadb:3306/myapp}"
+        -e SPRING_DATASOURCE_USERNAME="${SPRING_DATASOURCE_USERNAME:-root}"
+        -e SPRING_DATASOURCE_PASSWORD="$MARIADB_ROOT_PASSWORD"
+    )
+fi
+
 for instance in 1 2; do
     docker run -d \
         --name "myapp-$SERVICE_NAME-$TARGET-$instance" \
         --network "$NETWORK_NAME" \
         --restart unless-stopped \
-        -e APP_COLOR="$TARGET" \
+        "${DOCKER_ENV_ARGS[@]}" \
         -e SERVER_NAME="${SERVICE_NAME}_${TARGET}_${instance}" \
         -e DISPLAY_SERVER_ADDRESS="myapp-$SERVICE_NAME-$TARGET-$instance" \
-        -e SERVER_PORT="$SERVICE_PORT" \
         "$IMAGE_OVERRIDE"
 done
 
